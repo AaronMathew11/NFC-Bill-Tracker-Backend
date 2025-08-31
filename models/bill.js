@@ -1,14 +1,22 @@
 const mongoose = require('mongoose');
 
 const BillSchema = new mongoose.Schema({
-  date: { type: Date, required: true },
+  entryDate: { type: Date, required: true },
+  billDate: { type: Date, required: true },
   personName: { type: String, required: true },
+  vendorName: { type: String },
   amount: { type: Number, required: true },
   type: { type: String, enum: ['credit', 'debit'], required: true },
-  description: { type: String },
+  description: { type: String, required: true },
+  category: { type: String, required: true },
   photoUrl: { type: String },
   userId: { type: String, required: true },
-  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  adminId: { type: String },
+  status: { type: String, enum: ['pending', 'approved', 'rejected', 'returned'], default: 'pending' },
+  isDraft: { type: Boolean, default: false },
+  dateOfSettlement: { type: Date },
+  paymentType: { type: String, enum: ['direct', 'reimbursement'], default: 'reimbursement' },
+  remarks: { type: String },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Bill', BillSchema);

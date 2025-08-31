@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const billRoutes = require('./routes/billRouts'); // Import the routes from routes.js
+const billRoutes = require('./routes/billRoutes'); // Import the routes from routes.js
 
 console.log('Starting the server...');
 

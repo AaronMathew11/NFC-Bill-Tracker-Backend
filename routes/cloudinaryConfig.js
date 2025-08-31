@@ -12,8 +12,8 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'bills', // your folder name in Cloudinary
-    allowed_formats: ['jpg', 'png', 'jpeg'],
+    folder: 'bills',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'pdf'],
   },
 });
 
