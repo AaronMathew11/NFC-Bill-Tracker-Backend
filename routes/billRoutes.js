@@ -18,7 +18,7 @@ const upload = multer({ storage });
 //     }
 //   });
   
-router.get('/api/all-bills', async (req, res) => {
+router.get('/all-bills-with-stats', async (req, res) => {
     try {
       const bills = await Bill.find(); // Fetch all bills
   
@@ -40,11 +40,7 @@ router.get('/api/all-bills', async (req, res) => {
       res.status(500).json({ success: false, message: 'Server error' });
     }
   });
-
-
-
-
-
+  
 
 // POST - Upload a new bill
 router.post('/upload-bill', upload.single('photo'), async (req, res) => {
@@ -105,6 +101,57 @@ router.get('/all-bills', async (req, res) => {
     const bills = await Bill.find({}).sort({ createdAt: -1 });
 
     res.json({ success: true, bills });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+});
+
+// PATCH - Update bill content
+router.patch('/update-bill/:billId', upload.single('photo'), async (req, res) => {
+  try {
+    const { billId } = req.params;
+    const { entryDate, billDate, personName, amount, type, description, category, isDraft } = req.body;
+    
+    const oldBill = await Bill.findById(billId);
+    if (!oldBill) {
+      return res.status(404).json({ success: false, error: 'Bill not found' });
+    }
+
+    const updateData = {
+      entryDate,
+      billDate,
+      personName,
+      amount,
+      type,
+      description,
+      category,
+      isDraft: isDraft === 'true' || isDraft === true,
+    };
+
+    // Update photo if provided
+    if (req.file) {
+      updateData.photoUrl = req.file.path;
+    }
+
+    const updatedBill = await Bill.findByIdAndUpdate(
+      billId,
+      updateData,
+      { new: true }
+    );
+
+    // Log the event
+    await logEvent(
+      personName || 'User',
+      'update',
+      billId,
+      null,
+      null,
+      `Bill updated: ${description}`,
+      req.ip
+    );
+
+    res.json({ success: true, bill: updatedBill });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, error: 'Server Error' });
@@ -198,11 +245,14 @@ router.post('/check-duplicate', async (req, res) => {
 router.post('/direct-payment', upload.single('photo'), async (req, res) => {
   try {
     const { entryDate, billDate, vendorName, amount, description, category, type, paymentType, status, dateOfSettlement, adminId } = req.body;
+    console.log('Received direct payment data:', { entryDate, billDate, vendorName, amount, description, category, type, paymentType, status, dateOfSettlement, adminId });
     const photoUrl = req.file ? req.file.path : null;
 
+    console.log('About to create bill with personName:', vendorName);
     const bill = new Bill({
       entryDate,
       billDate,
+      personName: vendorName, // Map vendorName to personName for schema compatibility
       vendorName,
       amount,
       type: type || 'debit',
@@ -267,6 +317,44 @@ router.get('/event-logs', async (req, res) => {
     res.json({ success: true, logs });
   } catch (error) {
     console.error('Error fetching event logs:', error);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+});
+
+// GET - Users data (extracted from bills)
+router.get('/users', async (req, res) => {
+  try {
+    const bills = await Bill.find({});
+    
+    // Extract unique users from bills
+    const uniqueUsers = {};
+    bills.forEach(bill => {
+      const userKey = bill.personName || bill.vendorName || 'Unknown';
+      if (!uniqueUsers[userKey]) {
+        uniqueUsers[userKey] = {
+          _id: userKey,
+          name: userKey,
+          email: bill.email || 'N/A',
+          totalBills: 0,
+          totalAmount: 0,
+          pendingBills: 0,
+          approvedBills: 0,
+          rejectedBills: 0,
+          returnedBills: 0
+        };
+      }
+      uniqueUsers[userKey].totalBills += 1;
+      uniqueUsers[userKey].totalAmount += Number(bill.amount);
+      if (bill.status === 'pending') uniqueUsers[userKey].pendingBills += 1;
+      if (bill.status === 'approved') uniqueUsers[userKey].approvedBills += 1;
+      if (bill.status === 'rejected') uniqueUsers[userKey].rejectedBills += 1;
+      if (bill.status === 'returned') uniqueUsers[userKey].returnedBills += 1;
+    });
+    
+    const users = Object.values(uniqueUsers);
+    res.json({ success: true, users });
+  } catch (error) {
+    console.error('Error fetching users:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 });

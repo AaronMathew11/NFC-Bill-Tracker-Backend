@@ -2,13 +2,13 @@ const mongoose = require('mongoose');
 
 const BillSchema = new mongoose.Schema({
   entryDate: { type: Date, required: true },
-  billDate: { type: Date, required: true },
-  personName: { type: String, required: true },
+  billDate: { type: Date, required: function() { return !this.isDraft; } },
+  personName: { type: String, required: function() { return !this.isDraft && !this.vendorName; } },
   vendorName: { type: String },
-  amount: { type: Number, required: true },
+  amount: { type: Number, required: function() { return !this.isDraft; }, default: 0 },
   type: { type: String, enum: ['credit', 'debit'], required: true },
-  description: { type: String, required: true },
-  category: { type: String, required: true },
+  description: { type: String, required: function() { return !this.isDraft; } },
+  category: { type: String, required: function() { return !this.isDraft; } },
   photoUrl: { type: String },
   userId: { type: String, required: true },
   adminId: { type: String },
