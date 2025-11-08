@@ -12,6 +12,10 @@ const BillSchema = new mongoose.Schema({
   photoUrl: { type: String },
   userId: { type: String, required: true },
   adminId: { type: String },
+  createdByAdminId: { type: String }, // Admin who created the direct payment
+  createdByAdminName: { type: String }, // Name of admin who created the direct payment
+  approvedByAdminId: { type: String }, // Admin who approved the direct payment
+  approvedByAdminName: { type: String }, // Name of admin who approved the direct payment
   status: { type: String, enum: ['pending', 'approved', 'rejected', 'returned'], default: 'pending' },
   isDraft: { type: Boolean, default: false },
   dateOfSettlement: { type: Date },
